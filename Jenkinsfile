@@ -114,9 +114,9 @@ pipeline {
             steps {
                 echo '✅  Verifying the application is running on the worker server …'
                 script {
-                    // Read worker IP from inventory (or hard-code it here)
+                    // Read worker IP from inventory
                     def workerIp = sh(
-                        script: "grep -A1 '\\[worker\\]' ${ANSIBLE_INVENTORY} | tail -1 | awk '{print \$1}'",
+                        script: "grep -A1 '\\[worker\\]' ${ANSIBLE_INVENTORY} | tail -1 | grep -oP 'ansible_host=\\K[^ ]+'",
                         returnStdout: true
                     ).trim()
 

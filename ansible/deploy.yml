@@ -66,6 +66,9 @@
           - "{{ host_port }}:{{ container_port }}"
         env:
           SPRING_PROFILES_ACTIVE: "prod"
+          SPRING_DATASOURCE_URL: "jdbc:mysql://172.17.0.1:3306/employeemanagement?createDatabaseIfNotExist=true"
+          SPRING_DATASOURCE_USERNAME: "root"
+          SPRING_DATASOURCE_PASSWORD: "Vishal@123"
         log_driver: "json-file"
         log_options:
           max-size: "10m"
