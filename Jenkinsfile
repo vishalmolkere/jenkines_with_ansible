@@ -124,7 +124,7 @@ pipeline {
                     retry(18) {
                         sleep(time: 10, unit: 'SECONDS')
                         def status = sh(
-                            script: "curl -s -o /dev/null -w '%{http_code}' http://${workerIp}:8080/ || true",
+                            script: "curl -s -o /dev/null -w '%{http_code}' http://${workerIp}:8080/employees/all || true",
                             returnStdout: true
                         ).trim()
                         if (status != '200') {
