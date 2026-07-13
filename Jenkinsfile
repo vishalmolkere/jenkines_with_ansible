@@ -100,7 +100,7 @@ pipeline {
             steps {
                 echo '🚀  Triggering Ansible playbook to deploy on Worker Server …'
                 sh """
-                    ansible-playbook \
+                    /usr/local/bin/ansible-playbook \
                         -i ${ANSIBLE_INVENTORY} \
                         ${ANSIBLE_PLAYBOOK} \
                         --extra-vars "docker_image=${IMAGE_FULL}" \
