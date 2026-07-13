@@ -1,0 +1,109 @@
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# deploy.yml
+# Ansible Playbook – Deploy Employee Management App on Worker Server
+#
+# Called by Jenkins with:
+#   ansible-playbook -i ansible/inventory.ini ansible/deploy.yml \
+#       --extra-vars "docker_image=<image>:<tag>"
+# ──────────────────────────────────────────────────────────────────────────────
+
+- name: Deploy Employee Management Application
+  hosts: worker
+  become: true          # sudo
+  gather_facts: true
+
+  vars:
+    app_name:       "employeemanagement"
+    container_port: 8080
+    host_port:      8080
+    # docker_image is passed in by Jenkins via --extra-vars
+    # Fallback for manual runs:
+    docker_image:   "your-dockerhub-username/employeemanagement:latest"
+
+  tasks:
+
+    # ── 1. Ensure Docker is running ─────────────────────────────────────────
+    - name: Ensure Docker service is started and enabled
+      ansible.builtin.service:
+        name:    docker
+        state:   started
+        enabled: true
+
+    # ── 2. Pull the latest Docker image ─────────────────────────────────────
+    - name: Pull Docker image from Docker Hub
+      community.docker.docker_image:
+        name:   "{{ docker_image }}"
+        source: pull
+        force_source: true
+      register: pull_result
+
+    - name: Show pull result
+      ansible.builtin.debug:
+        var: pull_result.image.Id
+
+    # ── 3. Stop and remove the old container (if it exists) ─────────────────
+    - name: Stop existing container (if running)
+      community.docker.docker_container:
+        name:  "{{ app_name }}"
+        state: stopped
+      ignore_errors: true
+
+    - name: Remove existing container (if present)
+      community.docker.docker_container:
+        name:  "{{ app_name }}"
+        state: absent
+      ignore_errors: true
+
+    # ── 4. Start the new container ───────────────────────────────────────────
+    - name: Start new application container
+      community.docker.docker_container:
+        name:          "{{ app_name }}"
+        image:         "{{ docker_image }}"
+        state:         started
+        restart_policy: always
+        ports:
+          - "{{ host_port }}:{{ container_port }}"
+        env:
+          SPRING_PROFILES_ACTIVE: "prod"
+        log_driver: "json-file"
+        log_options:
+          max-size: "10m"
+          max-file: "3"
+      register: container_result
+
+    - name: Show container ID
+      ansible.builtin.debug:
+        msg: "Container '{{ app_name }}' started with ID: {{ container_result.container.Id[:12] }}"
+
+    # ── 5. Verify the application is responding ──────────────────────────────
+    - name: Wait for application to become healthy (up to 3 minutes)
+      ansible.builtin.uri:
+        url:            "http://localhost:{{ host_port }}/actuator/health"
+        return_content: true
+        status_code:    200
+      register: health_check
+      retries:  18
+      delay:    10
+      until:    health_check.status == 200
+      ignore_errors: true
+
+    - name: Deployment verification result
+      ansible.builtin.debug:
+        msg: >
+          {% if health_check.status == 200 %}
+          ✅  Application is UP and healthy at http://{{ ansible_host }}:{{ host_port }}
+          {% else %}
+          ⚠️  Health check did not return 200. Check container logs:
+              docker logs {{ app_name }}
+          {% endif %}
+
+    # ── 6. Print container logs (last 20 lines) for diagnostics ─────────────
+    - name: Fetch recent container logs
+      ansible.builtin.command: "docker logs --tail=20 {{ app_name }}"
+      register: container_logs
+      changed_when: false
+
+    - name: Show container logs
+      ansible.builtin.debug:
+        msg: "{{ container_logs.stdout_lines }}"

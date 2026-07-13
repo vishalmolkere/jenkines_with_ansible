@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Employee</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        form { max-width: 450px; }
+        label { display: block; margin-top: 12px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+        button { margin-top: 16px; padding: 10px 20px; background-color: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        a { display: inline-block; margin-top: 12px; }
+    </style>
+</head>
+<body>
+
+    <h2>Edit Employee</h2>
+
+    <form th:action="@{/employees/update/{id}(id=${employee.id})}" th:object="${employee}" method="post">
+
+        <label>Name</label>
+        <input type="text" th:field="*{name}" placeholder="Full name" required />
+
+        <label>Email</label>
+        <input type="email" th:field="*{email}" placeholder="Email address" required />
+
+        <label>Phone Number</label>
+        <input type="number" th:field="*{phoneno}" placeholder="Phone number" required />
+
+        <label>Gender</label>
+        <select th:field="*{gender}" required>
+            <option value="">-- Select --</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label>Designation</label>
+        <input type="text" th:field="*{designation}" placeholder="Job title" required />
+
+        <label>Salary</label>
+        <input type="number" th:field="*{salary}" placeholder="Salary" step="0.01" required />
+
+        <button type="submit">Update Employee</button>
+    </form>
+
+    <a href="/employees/all">← Back to List</a>
+
+</body>
+</html>
